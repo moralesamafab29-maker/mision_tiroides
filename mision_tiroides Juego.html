@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misión Tiroides: El Gran Recorrido</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-display: 'Fredoka', cursive, sans-serif;
+            --font-body: 'Plus Jakarta Sans', sans-serif;
+            --felt-green: #1b4332;
+            --wood-dark: #2c1810;
+            --wood-light: #5c3a21;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: #121c24;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(27, 67, 50, 0.4) 0%, rgba(10, 15, 20, 0.9) 100%),
+                repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 2px, transparent 2px, transparent 10px);
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-display { font-family: var(--font-display); }
+
+        /* Board Frame Wood Effect */
+        .wood-border {
+            background: linear-gradient(135deg, #422517 0%, #2a150c 50%, #1a0b05 100%);
+            box-shadow: 
+                0 20px 50px rgba(0,0,0,0.8),
+                inset 0 2px 3px rgba(255,255,255,0.2),
+                inset 0 -3px 8px rgba(0,0,0,0.8);
+            border-radius: 28px;
+            padding: 16px;
+        }
+
+        .felt-mat {
+            background: radial-gradient(circle, #2d6a4f 0%, #1b4332 80%, #081c15 100%);
+            border-radius: 20px;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.6);
+            position: relative;
+        }
+
+        /* 3D Dice styling & animation */
+        .dice-container {
+            perspective: 600px;
+        }
+        .dice {
+            width: 60px;
+            height: 60px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1s cubic-bezier(0.2, 0.8, 0.3, 1.15);
+        }
+        .dice-face {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(145deg, #ffffff, #e2e8f0);
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.15), 0 4px 10px rgba(0,0,0,0.3);
+            display: grid;
+            grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+            padding: 6px;
+            box-sizing: border-box;
+        }
+        .dot {
+            background-color: #0f172a;
+            border-radius: 50%;
+            align-self: center;
+            justify-self: center;
+            width: 10px;
+            height: 10px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
+        }
+        .dot.red { background-color: #e11d48; }
+
+        /* Cube Positions */
+        .face-1 { transform: translateZ(30px); }
+        .face-2 { transform: rotateY(180deg) translateZ(30px); }
+        .face-3 { transform: rotateY(-90deg) translateZ(30px); }
+        .face-4 { transform: rotateY(90deg) translateZ(30px); }
+        .face-5 { transform: rotateX(-90deg) translateZ(30px); }
+        .face-6 { transform: rotateX(90deg) translateZ(30px); }
+
+        /* 3D Card Flip */
+        .card-perspective { perspective: 1000px; }
+        .card-inner {
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .card-inner.flipped { transform: rotateY(180deg); }
+        .card-front, .card-back {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .card-back { transform: rotateY(180deg); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: #2d6a4f; border-radius: 3px; }
+
+        @media print {
+            body { background: white !important; color: black !important; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- HEADER / GAME STATUS NAVBAR -->
+    <header class="bg-slate-900/90 border-b border-emerald-500/30 px-4 py-3 sticky top-0 z-40 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="game.showMenu()">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/20">
+                    🦋
+                </div>
+                <div>
+                    <h1 class="font-display text-lg text-emerald-400 leading-none">MISIÓN TIROIDES</h1>
+                    <p class="text-xs text-slate-400 font-semibold">El Juego de Mesa Interactivo</p>
+                </div>
+            </div>
+
+            <!-- Active Players HUD Bar -->
+            <div id="players-hud" class="hidden flex items-center gap-2 sm:gap-4 overflow-x-auto py-1">
+                <!-- Dynamically populated player cards -->
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center gap-2">
+                <button onclick="game.toggleRulebook()" class="p-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition flex items-center gap-1.5" title="Reglas y Salud">
+                    <span>📖</span> <span class="hidden sm:inline">Manual de Salud</span>
+                </button>
+                <button id="sound-btn" onclick="sound.toggleMute()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm border border-slate-700 transition" title="Sonido">
+                    🔊
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP WRAPPER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 flex flex-col justify-center">
+
+        <!-- SETUP / START SCREEN -->
+        <section id="screen-setup" class="max-w-2xl mx-auto w-full wood-border my-auto">
+            <div class="felt-mat p-6 sm:p-10 text-center space-y-6">
+                <div class="w-24 h-24 mx-auto bg-slate-900/80 rounded-2xl border-2 border-emerald-400/50 flex items-center justify-center text-5xl shadow-2xl animate-bounce">
+                    🎲
+                </div>
+
+                <div>
+                    <span class="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-xs font-bold tracking-wider uppercase">
+                        Educación Sanitaria & Diversión
+                    </span>
+                    <h2 class="font-display text-3xl sm:text-4xl text-white mt-2">Misión Tiroides: El Gran Recorrido</h2>
+                    <p class="text-slate-300 text-sm sm:text-base mt-2 max-w-md mx-auto">
+                        Recorre el tablero: cada casilla en la que caigas te enseñará un consejo práctico sobre el hipotiroidismo. Responde preguntas, supera desafíos y reúne Estrellas de Salud.
+                    </p>
+                </div>
+
+                <!-- Player Selection Setup -->
+                <div class="bg-slate-950/70 p-5 rounded-2xl border border-slate-800 text-left space-y-4">
+                    <h3 class="font-display text-emerald-400 text-base">Configuración de Jugadores (1 a 4)</h3>
+                    
+                    <div id="player-setup-list" class="space-y-3">
+                        <!-- Dynamic inputs for players -->
+                    </div>
+
+                    <div class="flex justify-between items-center pt-2 border-t border-slate-800">
+                        <button onclick="game.addPlayerSlot()" class="text-xs font-bold text-teal-400 hover:text-teal-300 flex items-center gap-1">
+                            <span>➕ Añadir Jugador</span>
+                        </button>
+                        <span class="text-xs text-slate-500">Puedes jugar solo con Bots o en Grupo</span>
+                    </div>
+                </div>
+
+                <button onclick="game.initGame()" class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-display font-bold text-xl rounded-xl border-2 border-emerald-300 shadow-xl hover:brightness-110 active:scale-[0.99] transition">
+                    🚀 ¡COMENZAR LA PARTIDA!
+                </button>
+            </div>
+        </section>
+
+
+        <!-- BOARD GAMEPLAY SCREEN -->
+        <section id="screen-game" class="hidden flex flex-col lg:flex-row gap-6 items-start">
+
+            <!-- LEFT: THE BOARD CANVAS -->
+            <div class="flex-1 w-full wood-border relative">
+                <div class="felt-mat p-2 sm:p-4 overflow-hidden flex flex-col items-center justify-center">
+                    
+                    <!-- Canvas Board -->
+                    <div class="relative w-full max-w-[700px] aspect-square">
+                        <canvas id="board-canvas" class="w-full h-full rounded-xl shadow-2xl cursor-pointer"></canvas>
+                        
+                        <!-- Floating Toast Notification on Board -->
+                        <div id="board-toast" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900/95 border-2 border-emerald-400 text-white px-6 py-4 rounded-2xl shadow-2xl text-center pointer-events-none z-30 max-w-xs transition-all">
+                            <span id="toast-icon" class="text-3xl block mb-1">⭐</span>
+                            <h4 id="toast-title" class="font-display text-emerald-300 text-base"></h4>
+                            <p id="toast-msg" class="text-xs text-slate-300 mt-1"></p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- RIGHT: CONTROL DASHBOARD & TURN PANEL -->
+            <div class="w-full lg:w-80 space-y-4">
+
+                <!-- Current Turn Card -->
+                <div id="turn-card" class="bg-slate-900/90 border-2 border-emerald-500/40 p-5 rounded-2xl shadow-xl space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Turno Actual</span>
+                            <h3 id="current-player-name" class="font-display text-xl text-emerald-400">Jugador 1</h3>
+                        </div>
+                        <div id="current-player-avatar" class="w-12 h-12 rounded-xl bg-slate-800 border-2 border-emerald-400 flex items-center justify-center text-2xl shadow-md">
+                            🦋
+                        </div>
+                    </div>
+
+                    <!-- Dice Interactive Section -->
+                    <div class="flex items-center justify-around bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                        <!-- 3D Dice Display -->
+                        <div class="dice-container">
+                            <div id="dice3d" class="dice">
+                                <div class="dice-face face-1"><div class="dot red" style="grid-area:2/2"></div></div>
+                                <div class="dice-face face-2"><div class="dot" style="grid-area:1/1"></div><div class="dot" style="grid-area:3/3"></div></div>
+                                <div class="dice-face face-3"><div class="dot" style="grid-area:1/1"></div><div class="dot" style="grid-area:2/2"></div><div class="dot" style="grid-area:3/3"></div></div>
+                                <div class="dice-face face-4"><div class="dot" style="grid-area:1/1"></div><div class="dot" style="grid-area:1/3"></div><div class="dot" style="grid-area:3/1"></div><div class="dot" style="grid-area:3/3"></div></div>
+                                <div class="dice-face face-5"><div class="dot" style="grid-area:1/1"></div><div class="dot" style="grid-area:1/3"></div><div class="dot" style="grid-area:2/2"></div><div class="dot" style="grid-area:3/1"></div><div class="dot" style="grid-area:3/3"></div></div>
+                                <div class="dice-face face-6"><div class="dot" style="grid-area:1/1"></div><div class="dot" style="grid-area:1/3"></div><div class="dot" style="grid-area:2/1"></div><div class="dot" style="grid-area:2/3"></div><div class="dot" style="grid-area:3/1"></div><div class="dot" style="grid-area:3/3"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- Roll Button -->
+                        <button id="roll-btn" onclick="game.rollDice()" class="py-3 px-5 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-display font-bold text-base rounded-xl shadow-lg hover:brightness-110 active:scale-95 transition flex flex-col items-center">
+                            <span>LANZAR DADO</span>
+                            <span class="text-[10px] opacity-80 uppercase tracking-wider font-sans">Avanzar</span>
+                        </button>
+                    </div>
+
+                    <!-- Player Stats & Position -->
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-slate-950/40 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-400 block">Estrellas ⭐</span>
+                            <span id="player-stars-val" class="font-display text-base text-amber-400">0</span>
+                        </div>
+                        <div class="bg-slate-950/40 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-400 block">Casilla Actual</span>
+                            <span id="player-tile-val" class="font-display text-base text-teal-400">Salida (0)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Game History Log -->
+                <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-2">
+                    <h4 class="font-display text-xs text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>📜</span> Historial de Partida
+                    </h4>
+                    <div id="game-log" class="h-36 overflow-y-auto space-y-1.5 text-xs text-slate-300 pr-1">
+                        <p class="text-slate-500 italic">¡Bienvenidos a Misión Tiroides! Lanza el dado para comenzar.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- SCREEN END: VICTORY & RESULTS -->
+        <section id="screen-victory" class="hidden max-w-2xl mx-auto w-full wood-border my-auto">
+            <div class="felt-mat p-8 text-center space-y-6">
+                <div class="text-6xl animate-bounce">🏆</div>
+                <div>
+                    <span class="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-bold uppercase">
+                        Partida Finalizada
+                    </span>
+                    <h2 id="winner-title" class="font-display text-3xl text-white mt-2">¡Jugador 1 ha alcanzado la Meta!</h2>
+                    <p class="text-slate-300 text-sm mt-1">Has completado la Misión Tiroides y dominado la salud tiroidea.</p>
+                </div>
+
+                <!-- Final Leaderboard -->
+                <div id="leaderboard-container" class="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2 text-left">
+                    <h3 class="font-display text-amber-400 text-sm">Tabla de Clasificación Final</h3>
+                    <div id="leaderboard-list" class="space-y-2"></div>
+                </div>
+
+                <!-- Health Key Takeaways -->
+                <div class="bg-slate-900/90 p-5 rounded-2xl border border-emerald-500/30 text-left space-y-2 text-xs text-slate-300">
+                    <h4 class="font-display text-emerald-400 text-sm flex items-center gap-2 border-b border-slate-800 pb-2">
+                        <span>🧬</span> Aprendizajes Clave de la Partida
+                    </h4>
+                    <p>• <strong>Levotiroxina:</strong> Tomar siempre en ayunas con agua, 30-60 min antes de desayunar.</p>
+                    <p>• <strong>Interacciones:</strong> Separar los suplementos de calcio o hierro al menos 4 horas.</p>
+                    <p>• <strong>Controles:</strong> Realizar análisis de TSH/T4 libre a las 6-8 semanas tras cambios de dosis.</p>
+                    <p>• <strong>Embarazo:</strong> Comunicar de inmediato al médico, ya que los requerimientos hormonales cambian.</p>
+                </div>
+
+                <div class="flex flex-wrap gap-3 justify-center pt-2 no-print">
+                    <button onclick="game.showSetup()" class="py-3 px-6 bg-emerald-500 text-slate-950 font-display font-bold rounded-xl hover:bg-emerald-400">
+                        🔄 Nueva Partida
+                    </button>
+                    <button onclick="window.print()" class="py-3 px-6 bg-slate-800 text-slate-200 border border-slate-700 font-bold rounded-xl hover:bg-slate-700 text-xs">
+                        🖨️ Imprimir Resumen
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+
+    <!-- TIP EDUCATIVO AL CAER EN CADA CASILLA -->
+    <div id="modal-tip" class="hidden fixed inset-0 z-[60] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="tip-title">
+      <div class="w-full max-w-md rounded-3xl border-2 border-cyan-400 bg-slate-900 p-6 sm:p-8 shadow-2xl space-y-4">
+        <div class="flex justify-between items-center"><span class="text-xs font-bold tracking-widest uppercase text-cyan-300">🩺 Consejo de educación sanitaria</span><span id="tip-tile" class="rounded-full bg-slate-800 px-3 py-1 text-xs text-amber-300"></span></div>
+        <div id="tip-icon" class="text-5xl text-center">💡</div>
+        <h2 id="tip-title" class="font-display text-2xl text-white text-center"></h2>
+        <p id="tip-text" class="rounded-xl bg-slate-950/80 border border-slate-700 p-5 text-base text-slate-100 leading-relaxed"></p>
+        <p class="text-xs text-slate-400">Recuerda: esta información es educativa y no sustituye la valoración profesional.</p>
+        <button id="tip-continue" onclick="game.closeHealthTip()" class="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 px-5 py-4 text-slate-950 font-display font-bold text-lg hover:brightness-110">Entendido, continuar →</button>
+      </div>
+    </div>
+
+    <!-- TRIVIA CARD MODAL (Interactive Flip Card) -->
+    <div id="modal-card" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="w-full max-w-lg card-perspective">
+            <div id="card-flipper" class="card-inner relative w-full bg-slate-900 border-2 border-emerald-400/60 rounded-2xl shadow-2xl overflow-hidden">
+                
+                <!-- Front Side: Question -->
+                <div class="card-front p-6 space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <span id="card-category" class="px-3 py-1 bg-teal-500/20 text-teal-300 rounded-full text-xs font-bold border border-teal-500/30">
+                            TRIVIA MÉDICA
+                        </span>
+                        <span class="text-xs text-amber-400 font-bold">⭐ +20 Estrellas</span>
+                    </div>
+
+                    <h3 id="card-question" class="font-display text-lg text-white leading-snug">
+                        ¿Cargando pregunta de salud...?
+                    </h3>
+
+                    <div id="card-options" class="space-y-2.5 pt-2">
+                        <!-- Option buttons -->
+                    </div>
+                </div>
+
+                <!-- Back Side: Explanation & Results -->
+                <div class="card-back absolute inset-0 bg-slate-900 p-6 flex flex-col justify-between border-2 border-emerald-400/60 rounded-2xl">
+                    <div class="space-y-3">
+                        <div id="card-result-badge" class="font-display text-lg"></div>
+                        <h4 class="font-bold text-slate-200 text-sm">Explicación Sanitaria:</h4>
+                        <p id="card-explanation" class="text-xs sm:text-sm text-slate-300 leading-relaxed bg-slate-950/60 p-4 rounded-xl border border-slate-800"></p>
+                    </div>
+
+                    <button onclick="game.closeCardModal()" class="w-full py-3 bg-emerald-500 text-slate-950 font-display font-bold rounded-xl hover:bg-emerald-400">
+                        Continuar Partida →
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MINI-GAME MODAL -->
+    <div id="modal-minigame" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-slate-900 border-2 border-amber-400/60 rounded-2xl p-6 shadow-2xl space-y-4 text-center">
+            <div class="text-4xl animate-bounce">⚡</div>
+            <h3 class="font-display text-xl text-amber-300">MINI-DESAFÍO: Buenos hábitos</h3>
+            <p class="text-xs text-slate-300">
+                Desafío de coordinación: presiona cuando el indicador esté en verde. En la vida real no necesitas precisión de segundos: sigue el horario y la pauta indicados para tu levotiroxina.
+            </p>
+
+            <!-- Timing Bar -->
+            <div class="relative w-full h-8 bg-slate-950 rounded-xl overflow-hidden border border-slate-700 my-4">
+                <div class="absolute top-0 bottom-0 bg-emerald-500/40 border-x-2 border-emerald-400" style="left: 60%; width: 25%;"></div>
+                <div id="mg-pointer" class="absolute top-0 bottom-0 w-2.5 bg-amber-400 shadow-lg shadow-amber-400" style="left: 0%;"></div>
+            </div>
+
+            <button onclick="game.hitMinigame()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-emerald-500 text-slate-950 font-display font-bold rounded-xl hover:brightness-110">
+                ¡TOMAR AHORA!
+            </button>
+        </div>
+    </div>
+
+
+    <!-- RULEBOOK / HEALTH MANUAL MODAL -->
+    <div id="modal-rulebook" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="w-full max-w-2xl bg-slate-900 border-2 border-emerald-500/60 rounded-2xl p-6 shadow-2xl max-h-[85vh] flex flex-col justify-between">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-display text-xl text-emerald-400 flex items-center gap-2">
+                    <span>📖</span> Manual de Salud & Reglas del Tablero
+                </h3>
+                <button onclick="game.toggleRulebook()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+            </div>
+
+            <div class="overflow-y-auto space-y-4 my-4 pr-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                    <h4 class="font-bold text-amber-400 mb-1">🎮 Reglas del Juego:</h4>
+                    <p>1. Lanza el dado en tu turno para hacer avanzar a tu ficha.</p>
+                    <p>2. <strong>Cada vez que llegues a una casilla aparecerá un consejo sanitario.</strong> Léelo y pulsa «Entendido, continuar».</p>
+                    <p>3. Cae en casillas de Trivia (❓) para responder preguntas sobre el hipotiroidismo y ganar Estrellas.</p>
+                    <p>4. Las casillas de Evento (⭐ / ⚠️) pueden hacerte avanzar o retroceder según tus hábitos de salud.</p>
+                    <p>5. ¡El primer jugador en llegar a la Casilla Final 35 gana la partida!</p>
+                </div>
+
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-emerald-400 mb-1">🩺 Guía Sanitaria del Hipotiroidismo:</h4>
+                    <p><strong>• ¿Qué es?</strong> Es la disminución en la producción de hormonas tiroideas por la glándula tiroides, ralentizando el metabolismo general.</p>
+                    <p><strong>• Síntomas comunes:</strong> Cansancio, sensibilidad al frío, piel seca, estreñimiento y aumento de peso inexplicable.</p>
+                    <p><strong>• Diagnóstico:</strong> Se confirma mediante análisis de laboratorio midiendo TSH y T4 libre.</p>
+                    <p><strong>• Levotiroxina:</strong> Es el tratamiento estándar para reemplazar la hormona faltante. Debe tomarse en ayunas con agua pura.</p>
+                    <p><strong>• Interacciones:</strong> Espera al menos 4 horas antes de tomar suplementos de Calcio o Hierro.</p>
+                </div>
+            </div>
+
+            <button onclick="game.toggleRulebook()" class="w-full py-3 bg-slate-800 text-slate-200 font-bold rounded-xl hover:bg-slate-700">
+                Entendido, regresar al juego
+            </button>
+        </div>
+    </div>
+
+
+    <!-- JAVASCRIPT: SOUND FX & GAME ENGINE -->
+    <script>
+        /**
+         * Web Audio API Synthesizer
+         */
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+            }
+
+            toggleMute() {
+                this.muted = !this.muted;
+                const btn = document.getElementById('sound-btn');
+                if (btn) btn.textContent = this.muted ? '🔇' : '🔊';
+            }
+
+            playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.1) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e) {}
+            }
+
+            playDiceRoll() {
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => this.playTone(150 + Math.random() * 200, 'triangle', 0.05, 0.08), i * 60);
+                }
+            }
+
+            playHop() {
+                this.playTone(300, 'sine', 0.1, 0.1);
+                setTimeout(() => this.playTone(450, 'sine', 0.12, 0.1), 80);
+            }
+
+            playCorrect() {
+                this.playTone(523.25, 'triangle', 0.1, 0.12);
+                setTimeout(() => this.playTone(659.25, 'triangle', 0.15, 0.12), 100);
+                setTimeout(() => this.playTone(783.99, 'triangle', 0.2, 0.12), 200);
+            }
+
+            playWrong() {
+                this.playTone(220, 'sawtooth', 0.15, 0.12);
+                setTimeout(() => this.playTone(174.61, 'sawtooth', 0.25, 0.12), 120);
+            }
+        }
+
+        const sound = new SoundFX();
+
+        /**
+         * Board Layout Configuration (21 Tiles: 0 to 20)
+         */
+
+        const HEALTH_TIPS = [
+    {
+        "title": "¡Comienza la aventura!",
+        "text": "La tiroides es una parte pequeña del cuello que ayuda a tu cuerpo a usar la energía."
+    },
+    {
+        "title": "¿Qué es el hipotiroidismo?",
+        "text": "Ocurre cuando la tiroides produce menos hormonas de las que el cuerpo necesita."
+    },
+    {
+        "title": "Una pastilla con rutina",
+        "text": "Si te recetaron levotiroxina, normalmente se toma con agua y con el estómago vacío, antes del desayuno."
+    },
+    {
+        "title": "¿Cansancio frecuente?",
+        "text": "Sentir mucho cansancio puede ser una señal, pero no significa por sí solo que tengas hipotiroidismo."
+    },
+    {
+        "title": "Recuerda tu medicamento",
+        "text": "Una alarma en el celular puede ayudarte a recordar la hora de tu pastilla."
+    },
+    {
+        "title": "Una prueba de sangre",
+        "text": "El personal de salud puede pedir un examen llamado TSH para revisar cómo funciona tu tiroides."
+    },
+    {
+        "title": "Calcio y pastilla",
+        "text": "Si tomas calcio, generalmente debes dejar pasar al menos cuatro horas respecto a la levotiroxina."
+    },
+    {
+        "title": "¿Para qué sirve la pastilla?",
+        "text": "La levotiroxina ayuda a reemplazar la hormona que tu cuerpo no produce en cantidad suficiente."
+    },
+    {
+        "title": "Vuelve a tus controles",
+        "text": "Aunque te sientas bien, es importante hacerte los análisis cuando te lo indique el médico."
+    },
+    {
+        "title": "Antes de desayunar",
+        "text": "Habitualmente se espera entre 30 y 60 minutos después de tomar levotiroxina para desayunar."
+    },
+    {
+        "title": "Sin prisas",
+        "text": "No necesitas tomar tu pastilla en un segundo exacto. Lo importante es seguir las indicaciones y una rutina constante."
+    },
+    {
+        "title": "Cuidado con el hierro",
+        "text": "Las vitaminas que contienen hierro pueden dificultar que tu cuerpo aproveche la levotiroxina. Pregunta cómo separarlas."
+    },
+    {
+        "title": "No la suspendas solo",
+        "text": "Si te sientes mejor, puede ser porque tu tratamiento funciona. No lo suspendas sin consultar."
+    },
+    {
+        "title": "No cambies la cantidad",
+        "text": "No tomes más ni menos pastillas por tu cuenta, aunque tengas cansancio."
+    },
+    {
+        "title": "Comer variado ayuda",
+        "text": "Las frutas, verduras y otros alimentos variados apoyan tu salud, pero no reemplazan el tratamiento."
+    },
+    {
+        "title": "No tomes yodo por tu cuenta",
+        "text": "Tomar suplementos de yodo sin indicación puede empeorar algunos problemas de tiroides."
+    },
+    {
+        "title": "Una costumbre saludable",
+        "text": "Relaciona tu medicamento con una actividad diaria, siguiendo el horario que te indicaron."
+    },
+    {
+        "title": "Si planeas un embarazo",
+        "text": "Si tienes hipotiroidismo y deseas quedar embarazada, habla con tu equipo de salud."
+    },
+    {
+        "title": "Embarazo y controles",
+        "text": "Durante el embarazo pueden cambiar las necesidades de tratamiento. Consulta pronto y no suspendas la pastilla."
+    },
+    {
+        "title": "Pregunta sin pena",
+        "text": "Tu médico o farmacéutico puede ayudarte a entender cómo y cuándo tomar tus medicamentos."
+    },
+    {
+        "title": "¿Sientes más frío?",
+        "text": "Sentir frío cuando otras personas están cómodas puede ser una señal que vale la pena comentar en consulta."
+    },
+    {
+        "title": "Piel seca",
+        "text": "La piel seca puede aparecer con el hipotiroidismo, pero también tiene muchas otras causas."
+    },
+    {
+        "title": "¿Te cuesta ir al baño?",
+        "text": "El estreñimiento puede ser un síntoma. Si es frecuente, coméntalo en tu consulta."
+    },
+    {
+        "title": "Tu salud mental importa",
+        "text": "A veces el hipotiroidismo se relaciona con dificultades para concentrarse o cambios de ánimo. Cuéntaselo a tu profesional de salud."
+    },
+    {
+        "title": "No te compares",
+        "text": "La cantidad de medicamento que necesita otra persona puede ser distinta de la tuya."
+    },
+    {
+        "title": "¿Olvidaste una dosis?",
+        "text": "No improvises ni dupliques dosis. Sigue las instrucciones de tu medicamento o pregunta a tu farmacéutico."
+    },
+    {
+        "title": "Anota tus dudas",
+        "text": "Lleva una lista de preguntas a tu próxima cita médica. ¡Ninguna pregunta es tonta!"
+    },
+    {
+        "title": "Cuenta lo que tomas",
+        "text": "Informa sobre otros medicamentos, vitaminas y productos naturales que uses."
+    },
+    {
+        "title": "¿Café con la pastilla?",
+        "text": "El café puede afectar cómo se absorbe la levotiroxina. Habitualmente se toma con agua y se espera antes del desayuno."
+    },
+    {
+        "title": "No existen curas mágicas",
+        "text": "Desconfía de productos que prometen curar el hipotiroidismo sin controles médicos."
+    },
+    {
+        "title": "Revisa tus resultados",
+        "text": "Pregunta qué significan tus análisis y cuándo te toca el próximo control."
+    },
+    {
+        "title": "Cambios de peso",
+        "text": "El peso puede cambiar por muchas razones. No uses levotiroxina para adelgazar."
+    },
+    {
+        "title": "Ten paciencia",
+        "text": "Después de empezar el tratamiento, puede tomar varias semanas notar cambios y ajustar la dosis."
+    },
+    {
+        "title": "Cuida tu descanso",
+        "text": "Dormir bien y moverte según tus posibilidades favorece tu bienestar, aunque no reemplaza el tratamiento."
+    },
+    {
+        "title": "Pide ayuda si algo cambia",
+        "text": "Si aparecen molestias nuevas o persistentes, coméntalas con tu equipo de salud."
+    },
+    {
+        "title": "¡Llegaste a la meta!",
+        "text": "Ya sabes lo esencial: pregunta, sigue tu tratamiento como fue indicado y asiste a tus controles."
+    }
+];
+
+        const BOARD_TILES = [
+            { id: 0, type: 'start', title: 'Salida', icon: '🏁', color: '#10b981' },
+            { id: 1, type: 'trivia', title: '¿Qué es el Hipotiroidismo?', icon: '❓', color: '#3b82f6' },
+            { id: 2, type: 'event_good', title: 'Ayuno Correcto', icon: '⏰', msg: 'Tomaste la levotiroxina con agua en ayunas. ¡Avanza 2 casillas!', step: 2, color: '#f59e0b' },
+            { id: 3, type: 'trivia', title: 'Síntomas habituales', icon: '❓', color: '#3b82f6' },
+            { id: 4, type: 'minigame', title: 'Reto de buenos hábitos', icon: '⚡', color: '#ec4899' },
+            { id: 5, type: 'trivia', title: 'Pruebas de Diagnóstico', icon: '❓', color: '#3b82f6' },
+            { id: 6, type: 'event_bad', title: 'Calcio y medicamento', icon: '🥛', msg: 'Tomaste calcio junto a la levotiroxina. ¡Retrocede 1 casilla!', step: -1, color: '#ef4444' },
+            { id: 7, type: 'trivia', title: 'Medicamento para la tiroides', icon: '❓', color: '#3b82f6' },
+            { id: 8, type: 'event_good', title: 'Revisión de sangre', icon: '📊', msg: 'Acudiste a tu revisión de TSH a las 6 semanas. ¡Ganas 20 Estrellas!', stars: 20, color: '#f59e0b' },
+            { id: 9, type: 'trivia', title: 'Antes del desayuno', icon: '❓', color: '#3b82f6' },
+            { id: 10, type: 'minigame', title: 'Reto de Horario', icon: '⚡', color: '#ec4899' },
+            { id: 11, type: 'trivia', title: 'Separación de Suplementos', icon: '❓', color: '#3b82f6' },
+            { id: 12, type: 'event_bad', title: 'No dejar la medicina', icon: '⚠️', msg: 'Suspendiste la medicación al sentirte mejor. ¡Retrocede 2 casillas!', step: -2, color: '#ef4444' },
+            { id: 13, type: 'trivia', title: 'Visitas de control', icon: '❓', color: '#3b82f6' },
+            { id: 14, type: 'event_good', title: 'Dieta Equilibrada', icon: '🥗', msg: 'Mantienes hábitos saludables sin automedicarte yodo. ¡Ganas 15 Estrellas!', stars: 15, color: '#f59e0b' },
+            { id: 15, type: 'trivia', title: 'Verdades sobre el yodo', icon: '❓', color: '#3b82f6' },
+            { id: 16, type: 'trivia', title: 'Constancia Diaria', icon: '❓', color: '#3b82f6' },
+            { id: 17, type: 'event_good', title: 'Consulta Oportuna', icon: '👩‍⚕️', msg: 'Avisaste a tu médico ante un embarazo. ¡Avanza 1 casilla!', step: 1, color: '#f59e0b' },
+            { id: 18, type: 'trivia', title: 'Embarazo y Tiroides', icon: '❓', color: '#3b82f6' },
+            { id: 19, type: 'event_good', title: 'Acompañamiento Sanitario', icon: '🤝', msg: 'Resolvemos dudas con profesionales. ¡Ganas 25 Estrellas!', stars: 25, color: '#f59e0b' },
+            { id: 20, type: 'trivia', title: 'Señales de frío', icon: '❓', color: '#3b82f6' },
+            { id: 21, type: 'event_good', title: 'Apunta tus dudas', icon: '📝', msg: '¡Aprendiste algo útil para cuidar tu tiroides!', stars: 10, color: '#f59e0b' },
+            { id: 22, type: 'trivia', title: 'Piel seca', icon: '❓', color: '#3b82f6' },
+            { id: 23, type: 'trivia', title: 'Cambios de ánimo', icon: '❓', color: '#3b82f6' },
+            { id: 24, type: 'event_good', title: 'Tratamiento personal', icon: '💊', msg: '¡Aprendiste algo útil para cuidar tu tiroides!', stars: 10, color: '#f59e0b' },
+            { id: 25, type: 'trivia', title: 'Olvido de dosis', icon: '❓', color: '#3b82f6' },
+            { id: 26, type: 'event_good', title: 'Pregunta al farmacéutico', icon: '👩‍⚕️', msg: '¡Aprendiste algo útil para cuidar tu tiroides!', stars: 10, color: '#f59e0b' },
+            { id: 27, type: 'trivia', title: 'Otros medicamentos', icon: '❓', color: '#3b82f6' },
+            { id: 28, type: 'event_bad', title: 'Café con pastilla', icon: '☕', msg: '¡Aprendiste algo útil para cuidar tu tiroides!', step: -1, color: '#ef4444' },
+            { id: 29, type: 'trivia', title: 'Curas milagrosas', icon: '❓', color: '#3b82f6' },
+            { id: 30, type: 'event_good', title: 'Revisa tus análisis', icon: '📋', msg: '¡Aprendiste algo útil para cuidar tu tiroides!', stars: 10, color: '#f59e0b' },
+            { id: 31, type: 'trivia', title: 'Cambios de peso', icon: '❓', color: '#3b82f6' },
+            { id: 32, type: 'event_good', title: 'Ten paciencia', icon: '🌱', msg: '¡Aprendiste algo útil para cuidar tu tiroides!', stars: 10, color: '#f59e0b' },
+            { id: 33, type: 'trivia', title: 'Descanso y bienestar', icon: '❓', color: '#3b82f6' },
+            { id: 34, type: 'event_good', title: 'Consulta a tiempo', icon: '❤️', msg: '¡Aprendiste algo útil para cuidar tu tiroides!', stars: 10, color: '#f59e0b' },
+            { id: 35, type: 'finish', title: 'Meta: Aprendí a cuidarme', icon: '🏆', color: '#8b5cf6' }
+        ];
+
+        /**
+         * Health Trivia Questions Deck
+         */
+        const TRIVIA_DECK = [
+            {q:"¿Qué conviene hacer si olvidas tu pastilla?",options:["Tomar el doble sin preguntar","Revisar las instrucciones o consultar al farmacéutico","Dejar el tratamiento para siempre"],c:1,exp:"Si olvidas una dosis, sigue las instrucciones que te dieron. No dupliques la dosis por tu cuenta."},
+            {q:"¿La medicina para la tiroides sirve para adelgazar?",options:["Sí, cualquier persona puede usarla","No, solo debe usarse cuando está indicada","Sí, si se toma con café"],c:1,exp:"La levotiroxina no es un producto para bajar de peso. Usarla sin necesitarla puede causar daño."},
+            {q:"¿Qué es útil llevar a una cita médica?",options:["Una lista de medicamentos y preguntas","Solo el nombre de un amigo","Ninguna información"],c:0,exp:"Anotar lo que tomas, tus molestias y tus dudas ayuda a recibir una mejor orientación."},
+            {q:"¿Qué hacer si un producto promete curar la tiroides en un día?",options:["Comprarlo sin preguntar","Dejar las medicinas","Desconfiar y preguntar a un profesional"],c:2,exp:"No existen soluciones mágicas que sustituyan los controles y el tratamiento indicado."},
+            {q:"¿La piel seca significa siempre hipotiroidismo?",options:["No, puede tener otras causas","Sí, siempre","Solo si hace calor"],c:0,exp:"La piel seca puede aparecer por varias razones. Un profesional puede ayudarte a saber qué ocurre."},
+            {q:"¿Es buena idea cambiar tu dosis porque otra persona toma más?",options:["Sí","No, cada persona necesita una cantidad distinta","Solo los fines de semana"],c:1,exp:"La cantidad adecuada depende de tus necesidades y de tus controles médicos."},
+
+            {
+                q: "¿Qué pasa cuando una persona tiene hipotiroidismo?",
+                options: [
+                    "La tiroides produce menos hormonas de las que necesita el cuerpo",
+                    "La tiroides produce demasiadas hormonas",
+                    "La tiroides deja de existir físicamente"
+                ],
+                c: 0,
+                exp: "El hipotiroidismo ocurre cuando la tiroides produce pocas hormonas. Por eso algunas funciones del cuerpo pueden volverse más lentas."
+            },
+            {
+                q: "Si alguien presenta cansancio, piel seca, estreñimiento y frío constante, ¿qué debe hacer?",
+                options: [
+                    "Tomar suplementos hormonales por su cuenta",
+                    "Consultar a un profesional de la salud para ser evaluado",
+                    "Ignorar las señales y no acudir al médico"
+                ],
+                c: 1,
+                exp: "Estos síntomas pueden tener distintas causas. Consulta al personal de salud para saber qué ocurre."
+            },
+            {
+                q: "¿Qué examen de sangre ayuda a revisar la tiroides?",
+                options: [
+                    "TSH (Hormona Estimulante de la Tiroides) y T4 libre",
+                    "Exclusivamente un examen de glucemia",
+                    "Un recuento básico de glóbulos rojos solamente"
+                ],
+                c: 0,
+                exp: "La TSH y la T4 libre ayudan a evaluar la función tiroidea y a orientar el diagnóstico según el contexto clínico."
+            },
+            {
+                q: "¿Qué medicamento se usa habitualmente para el hipotiroidismo?",
+                options: [
+                    "Levotiroxina",
+                    "Un antibiótico",
+                    "Un antiinflamatorio de venta libre"
+                ],
+                c: 0,
+                exp: "La levotiroxina reemplaza la hormona tiroidea que falta; su dosis debe individualizarse."
+            },
+            {
+                q: "¿Cómo se recomienda tomar habitualmente la levotiroxina?",
+                options: [
+                    "En ayunas con agua, 30-60 minutos antes del desayuno",
+                    "Mezclada con el café de la tarde",
+                    "Únicamente los días de mucho cansancio"
+                ],
+                c: 0,
+                exp: "Tomarla en ayunas con agua ayuda a que su absorción sea más constante; sigue las instrucciones de tu profesional sanitario."
+            },
+            {
+                q: "Si tomas suplementos de Calcio o Hierro y Levotiroxina, ¿qué regla aplica?",
+                options: [
+                    "Debes separarlos al menos 4 horas de la levotiroxina",
+                    "Deben ingerirse en la misma toma",
+                    "El calcio sustituye a la medicación tiroidea"
+                ],
+                c: 0,
+                exp: "El calcio y el hierro se unen a la levotiroxina en el intestino e impiden su absorción si se toman juntos."
+            },
+            {
+                q: "¿Cuándo suele programarse el primer control de TSH tras ajustar la dosis?",
+                options: [
+                    "A las 6 u 8 semanas aproximadamente",
+                    "A los 10 años",
+                    "Nunca es necesario volver a medir"
+                ],
+                c: 0,
+                exp: "Después de cambiar la dosis, suelen pasar unas 6 a 8 semanas antes del análisis de control, según tu situación."
+            },
+            {
+                q: "¿Cuál es la postura correcta sobre la dieta y los suplementos de yodo?",
+                options: [
+                    "Una dieta sana ayuda, pero no sustituye la dosis prescrita de levotiroxina",
+                    "El exceso de yodo cura cualquier problema de tiroides",
+                    "Se debe eliminar toda la sal de la dieta"
+                ],
+                c: 0,
+                exp: "Los suplementos de yodo no indicados pueden empeorar ciertos cuadros tiroideos. El tratamiento médico sigue siendo indispensable."
+            },
+            {
+                q: "Si tus análisis se normalizan y te sientes bien, ¿qué debes hacer?",
+                options: [
+                    "Mantener el tratamiento según la indicación médica",
+                    "Suspender la pastilla inmediatamente",
+                    "Compartir la dosis con otra persona"
+                ],
+                c: 0,
+                exp: "Sentirse bien demuestra que el tratamiento está funcionando correctamente; no significa que deba suspenderse."
+            },
+            {
+                q: "En caso de embarazo en una mujer con hipotiroidismo, ¿qué es primordial?",
+                options: [
+                    "Avisar de inmediato a su médico para ajustar controles y dosis",
+                    "Dejar de tomar la levotiroxina por completo",
+                    "Esperar al nacimiento para consultar"
+                ],
+                c: 0,
+                exp: "Las necesidades de hormona tiroidea aumentan en la gestación para asegurar el desarrollo fetal saludable."
+            }
+        ];
+
+        /**
+         * Main Game Engine Class
+         */
+        class BoardGameEngine {
+            constructor() {
+                this.players = [];
+                this.currentPlayerIdx = 0;
+                this.isRolling = false;
+                this.canvas = null;
+                this.ctx = null;
+                this.tileCoords = [];
+                this.minigameActive = false;
+                this.minigameAnimId = null;
+                this.currentQuestion = null;
+            }
+
+            init() {
+                this.canvas = document.getElementById('board-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.resizeCanvas();
+                window.addEventListener('resize', () => {
+                    this.resizeCanvas();
+                    this.drawBoard();
+                });
+
+                this.showSetup();
+            }
+
+            resizeCanvas() {
+                if (!this.canvas) return;
+                const rect = this.canvas.parentElement.getBoundingClientRect();
+                const size = Math.min(rect.width, 700);
+                this.canvas.width = size * window.devicePixelRatio || size;
+                this.canvas.height = size * window.devicePixelRatio || size;
+                this.calculateTilePositions();
+            }
+
+            showSetup() {
+                document.getElementById('screen-setup').classList.remove('hidden');
+                document.getElementById('screen-game').classList.add('hidden');
+                document.getElementById('screen-victory').classList.add('hidden');
+                document.getElementById('players-hud').classList.add('hidden');
+
+                // Default 2 players setup
+                this.players = [
+                    { name: 'Jugador 1', avatar: '🦋', isBot: false, tile: 0, stars: 0, color: '#10b981' },
+                    { name: 'Dr. Bot', avatar: '🤖', isBot: true, tile: 0, stars: 0, color: '#3b82f6' }
+                ];
+                this.renderSetupInputs();
+            }
+
+            renderSetupInputs() {
+                const list = document.getElementById('player-setup-list');
+                list.innerHTML = '';
+
+                const avatars = ['🦋', '🛡️', '🩺', '🧪', '🤖', '👑'];
+                const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ec4899'];
+
+                this.players.forEach((p, idx) => {
+                    const row = document.createElement('div');
+                    row.className = "flex items-center gap-3 bg-slate-900 p-2.5 rounded-xl border border-slate-800";
+                    row.innerHTML = `
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-lg font-bold" style="background:${colors[idx % colors.length]}20; color:${colors[idx % colors.length]}">
+                            ${p.avatar}
+                        </div>
+                        <input type="text" value="${p.name}" onchange="game.players[${idx}].name = this.value" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+                        <label class="flex items-center gap-1 text-xs text-slate-400 cursor-pointer">
+                            <input type="checkbox" ${p.isBot ? 'checked' : ''} onchange="game.players[${idx}].isBot = this.checked" class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
+                            <span>Bot</span>
+                        </label>
+                        ${this.players.length > 1 ? `
+                            <button onclick="game.removePlayerSlot(${idx})" class="text-red-400 hover:text-red-300 text-xs px-2">✕</button>
+                        ` : ''}
+                    `;
+                    list.appendChild(row);
+                });
+            }
+
+            addPlayerSlot() {
+                if (this.players.length >= 4) return;
+                const idx = this.players.length;
+                const avatars = ['🦋', '🛡️', '🩺', '🧪', '🤖'];
+                this.players.push({
+                    name: `Jugador ${idx + 1}`,
+                    avatar: avatars[idx % avatars.length],
+                    isBot: false,
+                    tile: 0,
+                    stars: 0,
+                    color: ['#10b981', '#3b82f6', '#f59e0b', '#ec4899'][idx]
+                });
+                this.renderSetupInputs();
+            }
+
+            removePlayerSlot(idx) {
+                if (this.players.length <= 1) return;
+                this.players.splice(idx, 1);
+                this.renderSetupInputs();
+            }
+
+            initGame() {
+                document.getElementById('screen-setup').classList.add('hidden');
+                document.getElementById('screen-game').classList.remove('hidden');
+                document.getElementById('players-hud').classList.remove('hidden');
+
+                this.currentPlayerIdx = 0;
+                this.players.forEach(p => { p.tile = 0; p.stars = 0; });
+
+                this.resizeCanvas();
+                this.updateHUD();
+                this.drawBoard();
+                this.logMessage("🎮 ¡Partida iniciada! Es el turno de " + this.players[0].name);
+
+                if (this.players[0].isBot) {
+                    setTimeout(() => this.rollDice(), 1000);
+                }
+            }
+
+            /* Calculate Winding Snake Path Coordinates on Canvas */
+            calculateTilePositions() {
+                this.tileCoords = [];
+                const w = this.canvas.width;
+                const padding = w * 0.105;
+                const innerWidth = w - padding * 2;
+
+                // 5x5 Grid Spiral Path
+                const cols = 6;
+                const rows = 6;
+                const stepX = innerWidth / (cols - 1);
+                const stepY = innerWidth / (rows - 1);
+
+                const gridPattern = [
+                    [0,5], [1,5], [2,5], [3,5], [4,5], [5,5], [5,4], [4,4], [3,4], [2,4], [1,4], [0,4], [0,3], [1,3], [2,3], [3,3], [4,3], [5,3], [5,2], [4,2], [3,2], [2,2], [1,2], [0,2], [0,1], [1,1], [2,1], [3,1], [4,1], [5,1], [5,0], [4,0], [3,0], [2,0], [1,0], [0,0]
+                ];
+
+                for (let i = 0; i < BOARD_TILES.length; i++) {
+                    const cell = gridPattern[i];
+                    const x = padding + cell[0] * stepX;
+                    const y = padding + cell[1] * stepY;
+                    this.tileCoords.push({ x, y });
+                }
+            }
+
+            drawBoard() {
+                if (!this.ctx) return;
+                const ctx = this.ctx;
+                const w = this.canvas.width;
+                ctx.clearRect(0, 0, w, w);
+
+                // Draw Connecting Path Lines
+                ctx.beginPath();
+                ctx.lineWidth = w * 0.025;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.setLineDash([8, 8]);
+                for (let i = 0; i < this.tileCoords.length - 1; i++) {
+                    ctx.moveTo(this.tileCoords[i].x, this.tileCoords[i].y);
+                    ctx.lineTo(this.tileCoords[i+1].x, this.tileCoords[i+1].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw Board Tiles
+                const tileSize = w * 0.057;
+                for (let i = 0; i < BOARD_TILES.length; i++) {
+                    const pos = this.tileCoords[i];
+                    const tile = BOARD_TILES[i];
+
+                    // Tile Background Shadow & Base
+                    ctx.save();
+                    ctx.translate(pos.x, pos.y);
+
+                    ctx.beginPath();
+                    ctx.arc(0, 0, tileSize, 0, Math.PI * 2);
+                    ctx.fillStyle = tile.color;
+                    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowOffsetY = 4;
+                    ctx.fill();
+
+                    // Inner Ring
+                    ctx.beginPath();
+                    ctx.arc(0, 0, tileSize * 0.82, 0, Math.PI * 2);
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fill();
+
+                    // Icon / Number
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = `${tileSize * 0.7}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(tile.icon, 0, -2);
+
+                    // Tile Index Label
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = `bold ${tileSize * 0.35}px 'Fredoka', sans-serif`;
+                    ctx.fillText(i, 0, tileSize * 0.55);
+
+                    ctx.restore();
+                }
+
+                // Draw Player Pawns
+                this.players.forEach((p, pIdx) => {
+                    const pos = this.tileCoords[p.tile];
+                    if (!pos) return;
+
+                    // Offset pawns if multiple on same tile
+                    const offsetAngle = (pIdx * (Math.PI * 2 / this.players.length));
+                    const offsetX = this.players.filter(other => other.tile === p.tile).length > 1 ? Math.cos(offsetAngle) * (tileSize * 0.5) : 0;
+                    const offsetY = this.players.filter(other => other.tile === p.tile).length > 1 ? Math.sin(offsetAngle) * (tileSize * 0.5) : 0;
+
+                    ctx.save();
+                    ctx.translate(pos.x + offsetX, pos.y + offsetY);
+
+                    // Pawn Glow Ring
+                    ctx.beginPath();
+                    ctx.arc(0, 0, tileSize * 0.5, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.shadowColor = p.color;
+                    ctx.shadowBlur = 12;
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(0, 0, tileSize * 0.4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#020617';
+                    ctx.fill();
+
+                    // Avatar Emoji
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = `${tileSize * 0.5}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(p.avatar, 0, 0);
+
+                    ctx.restore();
+                });
+            }
+
+            updateHUD() {
+                const p = this.players[this.currentPlayerIdx];
+                document.getElementById('current-player-name').textContent = p.name;
+                document.getElementById('current-player-name').style.color = p.color;
+                document.getElementById('current-player-avatar').textContent = p.avatar;
+                document.getElementById('player-stars-val').textContent = p.stars;
+                document.getElementById('player-tile-val').textContent = `${BOARD_TILES[p.tile].title} (${p.tile})`;
+
+                // Update Header Players List
+                const hudList = document.getElementById('players-hud');
+                hudList.innerHTML = '';
+                this.players.forEach((player, idx) => {
+                    const isTurn = idx === this.currentPlayerIdx;
+                    const card = document.createElement('div');
+                    card.className = `flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs transition ${isTurn ? 'bg-slate-800 border-emerald-400 ring-2 ring-emerald-500/30' : 'bg-slate-950/60 border-slate-800 opacity-70'}`;
+                    card.innerHTML = `
+                        <span>${player.avatar}</span>
+                        <span class="font-bold text-slate-200">${player.name}</span>
+                        <span class="text-amber-400 font-display">⭐${player.stars}</span>
+                    `;
+                    hudList.appendChild(card);
+                });
+            }
+
+            logMessage(msg) {
+                const log = document.getElementById('game-log');
+                const entry = document.createElement('p');
+                entry.className = "text-xs border-b border-slate-800/50 pb-1";
+                entry.innerHTML = `<span class="text-emerald-400 font-bold">›</span> ${msg}`;
+                log.prepend(entry);
+            }
+
+            rollDice() {
+                if (this.isRolling) return;
+                this.isRolling = true;
+                document.getElementById('roll-btn').disabled = true;
+
+                sound.playDiceRoll();
+
+                const dice = document.getElementById('dice3d');
+                const result = Math.floor(Math.random() * 6) + 1;
+
+                // 3D Rotation Angles
+                const rotations = {
+                    1: { x: 0, y: 0 },
+                    2: { x: 0, y: -180 },
+                    3: { x: 0, y: 90 },
+                    4: { x: 0, y: -90 },
+                    5: { x: 90, y: 0 },
+                    6: { x: -90, y: 0 }
+                };
+
+                const rot = rotations[result];
+                const extraRounds = 720; // 2 full spins
+                dice.style.transform = `rotateX(${rot.x + extraRounds}deg) rotateY(${rot.y + extraRounds}deg)`;
+
+                setTimeout(() => {
+                    const p = this.players[this.currentPlayerIdx];
+                    this.logMessage(`${p.name} lanzó el dado y obtuvo un <strong class="text-amber-400">${result}</strong>.`);
+                    this.movePlayer(result);
+                }, 1100);
+            }
+
+            movePlayer(steps) {
+                const p = this.players[this.currentPlayerIdx];
+                let remaining = steps;
+
+                const stepInterval = setInterval(() => {
+                    if (remaining > 0 && p.tile < BOARD_TILES.length - 1) {
+                        p.tile++;
+                        remaining--;
+                        sound.playHop();
+                        this.drawBoard();
+                        this.updateHUD();
+                    } else if (remaining < 0 && p.tile > 0) {
+                        p.tile--;
+                        remaining++;
+                        sound.playHop();
+                        this.drawBoard();
+                        this.updateHUD();
+                    } else {
+                        clearInterval(stepInterval);
+                        this.isRolling = false;
+                        document.getElementById('roll-btn').disabled = false;
+                        this.handleTileLanding();
+                    }
+                }, 300);
+            }
+
+            handleTileLanding() {
+                const p = this.players[this.currentPlayerIdx];
+                const tile = BOARD_TILES[p.tile];
+                const tip = HEALTH_TIPS[p.tile];
+                document.getElementById('tip-tile').textContent = `Casilla ${p.tile} de 35`;
+                document.getElementById('tip-icon').textContent = tile.icon;
+                document.getElementById('tip-title').textContent = tip.title;
+                document.getElementById('tip-text').textContent = tip.text;
+                document.getElementById('modal-tip').classList.remove('hidden');
+                document.getElementById('roll-btn').disabled = true;
+                this.logMessage(`💡 Consejo sanitario de casilla ${p.tile}: ${tip.title}`);
+                if (p.isBot) setTimeout(() => this.closeHealthTip(), 2200);
+            }
+
+            closeHealthTip() {
+                document.getElementById('modal-tip').classList.add('hidden');
+                document.getElementById('roll-btn').disabled = false;
+                this.processTileLanding();
+            }
+
+            processTileLanding() {
+                const p = this.players[this.currentPlayerIdx];
+                const tile = BOARD_TILES[p.tile];
+
+                if (tile.type === 'finish') {
+                    this.triggerVictory();
+                    return;
+                }
+
+                if (tile.type === 'event_good' || tile.type === 'event_bad') {
+                    this.showToast(tile.icon, tile.title, tile.msg);
+                    this.logMessage(`${p.name} cayó en ${tile.title}: ${tile.msg}`);
+
+                    if (tile.stars) p.stars += tile.stars;
+                    this.updateHUD();
+
+                    if (tile.step) {
+                        setTimeout(() => this.movePlayer(tile.step), 1500);
+                    } else {
+                        setTimeout(() => this.nextTurn(), 2000);
+                    }
+                } else if (tile.type === 'trivia') {
+                    if (p.isBot) {
+                        // Bot auto answers trivia
+                        const isCorrect = Math.random() > 0.3;
+                        if (isCorrect) p.stars += 20;
+                        this.logMessage(`🤖 ${p.name} respondió la trivia y ${isCorrect ? '¡acertó! (+20⭐)' : 'falló'}.`);
+                        this.updateHUD();
+                        setTimeout(() => this.nextTurn(), 1500);
+                    } else {
+                        this.openTriviaModal();
+                    }
+                } else if (tile.type === 'minigame') {
+                    if (p.isBot) {
+                        p.stars += 15;
+                        this.logMessage(`🤖 ${p.name} completó el mini-desafío (+15⭐).`);
+                        this.updateHUD();
+                        setTimeout(() => this.nextTurn(), 1500);
+                    } else {
+                        this.openMinigame();
+                    }
+                } else {
+                    this.nextTurn();
+                }
+            }
+
+            showToast(icon, title, msg) {
+                const toast = document.getElementById('board-toast');
+                document.getElementById('toast-icon').textContent = icon;
+                document.getElementById('toast-title').textContent = title;
+                document.getElementById('toast-msg').textContent = msg;
+
+                toast.classList.remove('hidden');
+                setTimeout(() => toast.classList.add('hidden'), 2200);
+            }
+
+            openTriviaModal() {
+                const flipper = document.getElementById('card-flipper');
+                flipper.classList.remove('flipped');
+
+                const randomQ = TRIVIA_DECK[Math.floor(Math.random() * TRIVIA_DECK.length)];
+                this.currentQuestion = randomQ;
+
+                document.getElementById('card-question').textContent = randomQ.q;
+                const optsContainer = document.getElementById('card-options');
+                optsContainer.innerHTML = '';
+
+                randomQ.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500 text-xs sm:text-sm font-semibold text-slate-200 transition flex items-center gap-2";
+                    btn.innerHTML = `<span class="w-6 h-6 rounded-lg bg-slate-800 text-emerald-400 font-display flex items-center justify-center text-xs">${String.fromCharCode(65 + idx)}</span> <span>${opt}</span>`;
+                    btn.onclick = () => this.answerTrivia(idx);
+                    optsContainer.appendChild(btn);
+                });
+
+                document.getElementById('modal-card').classList.remove('hidden');
+            }
+
+            answerTrivia(chosenIdx) {
+                const p = this.players[this.currentPlayerIdx];
+                const q = this.currentQuestion;
+                const isCorrect = chosenIdx === q.c;
+
+                const badge = document.getElementById('card-result-badge');
+                if (isCorrect) {
+                    sound.playCorrect();
+                    p.stars += 20;
+                    badge.className = "font-display text-lg text-emerald-400";
+                    badge.textContent = "✅ ¡CORRECTO! (+20 Estrellas)";
+                    this.logMessage(`${p.name} respondió correctamente la trivia (+20⭐).`);
+                } else {
+                    sound.playWrong();
+                    badge.className = "font-display text-lg text-rose-400";
+                    badge.textContent = "💡 APRENDAMOS JUNTO AL DOCTOR";
+                    this.logMessage(`${p.name} falló la pregunta de trivia.`);
+                }
+
+                document.getElementById('card-explanation').textContent = q.exp;
+                document.getElementById('card-flipper').classList.add('flipped');
+                this.updateHUD();
+            }
+
+            closeCardModal() {
+                document.getElementById('modal-card').classList.add('hidden');
+                this.nextTurn();
+            }
+
+            /* Timing Minigame */
+            openMinigame() {
+                document.getElementById('modal-minigame').classList.remove('hidden');
+                this.minigameActive = true;
+                let pos = 0;
+                let dir = 2.5;
+                const pointer = document.getElementById('mg-pointer');
+
+                const loop = () => {
+                    if (!this.minigameActive) return;
+                    pos += dir;
+                    if (pos >= 98 || pos <= 0) dir *= -1;
+                    if (pointer) pointer.style.left = `${pos}%`;
+                    this.minigameAnimId = requestAnimationFrame(loop);
+                };
+                this.minigameAnimId = requestAnimationFrame(loop);
+            }
+
+            hitMinigame() {
+                this.minigameActive = false;
+                if (this.minigameAnimId) cancelAnimationFrame(this.minigameAnimId);
+
+                const pointer = document.getElementById('mg-pointer');
+                const pos = parseFloat(pointer.style.left);
+                const p = this.players[this.currentPlayerIdx];
+
+                document.getElementById('modal-minigame').classList.add('hidden');
+
+                if (pos >= 58 && pos <= 85) {
+                    sound.playCorrect();
+                    p.stars += 25;
+                    this.showToast("⚡", "¡Dosis Exacta!", "¡Buen reflejo! Ganas 25 Estrellas. Recuerda seguir tu pauta habitual.");
+                    this.logMessage(`${p.name} superó el mini-desafío (+25⭐).`);
+                } else {
+                    sound.playWrong();
+                    this.showToast("⏰", "Fuera de Tiempo", "No acertaste el minijuego. En la vida real, sigue la pauta prescrita sin modificar dosis por el resultado de este juego.");
+                    this.logMessage(`${p.name} no completó a tiempo el mini-desafío.`);
+                }
+
+                this.updateHUD();
+                setTimeout(() => this.nextTurn(), 1800);
+            }
+
+            nextTurn() {
+                this.currentPlayerIdx = (this.currentPlayerIdx + 1) % this.players.length;
+                this.updateHUD();
+
+                const nextP = this.players[this.currentPlayerIdx];
+                if (nextP.isBot) {
+                    setTimeout(() => this.rollDice(), 1200);
+                }
+            }
+
+            triggerVictory() {
+                const winner = this.players[this.currentPlayerIdx];
+                sound.playCorrect();
+
+                document.getElementById('screen-game').classList.add('hidden');
+                document.getElementById('screen-victory').classList.remove('hidden');
+                document.getElementById('winner-title').textContent = `¡${winner.name} ha alcanzado la Meta!`;
+
+                // Sort players by Stars
+                const sorted = [...this.players].sort((a, b) => b.stars - a.stars);
+                const list = document.getElementById('leaderboard-list');
+                list.innerHTML = '';
+
+                sorted.forEach((p, rank) => {
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs";
+                    row.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="font-display text-amber-400 text-sm">#${rank + 1}</span>
+                            <span class="text-base">${p.avatar}</span>
+                            <span class="font-bold text-white">${p.name}</span>
+                        </div>
+                        <span class="font-display text-amber-400">${p.stars} Estrellas</span>
+                    `;
+                    list.appendChild(row);
+                });
+            }
+
+            toggleRulebook() {
+                const modal = document.getElementById('modal-rulebook');
+                modal.classList.toggle('hidden');
+            }
+        }
+
+        // Initialize Game Engine Instance
+        const game = new BoardGameEngine();
+        window.onload = () => game.init();
+    </script>
+</body>
+</html>
